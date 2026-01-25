@@ -1,0 +1,17 @@
+{
+  "Group": "TownsSiege",
+  "Name": "TownsSiege",
+  "Version": "1.0.0",
+  "Description": "TownsSiege mod for Hytale",
+  "Authors": [
+    {
+      "Name": "VitorHS"
+    }
+  ],
+  "Main": "com.townssiege.TownsSiege",
+  "ServerVersion": "*",
+  "IncludesAssetPack": false,
+  "Dependencies": {},
+  "OptionalDependencies": {},
+  "DisabledByDefault": false
+}
