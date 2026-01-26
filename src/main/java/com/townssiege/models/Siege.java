@@ -14,7 +14,8 @@ public class Siege {
     private final long bannerDuration;
     private final long siegeDuration;
 
-    public Siege(TimeProvider timeProvider, long bannerInterval, long bannerDuration, long siegeDuration) {
+    public Siege(TimeProvider timeProvider, long bannerInterval, long bannerDuration, long siegeDuration,
+                 UUID initialAttackerId, UUID initialDefenderId) {
         this.attackers = new Team(TeamRole.ATTACKER);
         this.defenders = new Team(TeamRole.DEFENDER);
         this.timeProvider = timeProvider;
@@ -22,6 +23,9 @@ public class Siege {
         this.bannerInterval = bannerInterval;
         this.bannerDuration = bannerDuration;
         this.siegeDuration = siegeDuration;
+
+        this.attackers.addPlayer(initialAttackerId);
+        this.defenders.addPlayer(initialDefenderId);
     }
 
     public boolean isBannerActive() {
@@ -102,5 +106,13 @@ public class Siege {
             return defenders;
         }
         return null;
+    }
+
+    public Team getAttackers() {
+        return attackers;
+    }
+
+    public Team getDefenders() {
+        return defenders;
     }
 }

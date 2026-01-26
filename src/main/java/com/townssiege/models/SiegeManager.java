@@ -25,11 +25,12 @@ public class SiegeManager {
         this.siegeDuration = siegeDuration;
     }
 
-    public boolean startSiege(UUID territoryId) {
+    public boolean startSiege(UUID territoryId, UUID attackerId, UUID defenderId) {
         if (activeSieges.containsKey(territoryId)) {
             return false;
         }
-        activeSieges.put(territoryId, new Siege(timeProvider, bannerInterval, bannerDuration, siegeDuration));
+        activeSieges.put(territoryId, new Siege(timeProvider, bannerInterval, bannerDuration, siegeDuration,
+                attackerId, defenderId));
         return true;
     }
 
@@ -43,5 +44,9 @@ public class SiegeManager {
 
     public Siege getSiege(UUID territoryId) {
         return activeSieges.get(territoryId);
+    }
+
+    public Map<UUID, Siege> getActiveSieges() {
+        return activeSieges;
     }
 }

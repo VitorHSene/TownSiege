@@ -4,6 +4,7 @@ import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.townssiege.commands.SiegeCommand;
 import com.townssiege.models.SiegeManager;
+import com.townssiege.notification.SiegeNotifier;
 
 import java.util.logging.Level;
 
@@ -12,6 +13,7 @@ public class TownsSiege extends JavaPlugin {
     private static TownsSiege instance;
 
     private SiegeManager siegeManager;
+    private SiegeNotifier siegeNotifier;
 
     public TownsSiege(JavaPluginInit init) {
         super(init);
@@ -26,12 +28,17 @@ public class TownsSiege extends JavaPlugin {
 
         this.getLogger().at(Level.INFO).log("Initializing TownsSiege");
         this.siegeManager = new SiegeManager(3 * HOUR, 1 * HOUR, 24 * HOUR);
+        this.siegeNotifier = new SiegeNotifier(siegeManager);
+        this.siegeNotifier.start();
 
         getCommandRegistry().registerCommand(new SiegeCommand());
     }
 
     @Override
     protected void shutdown() {
+        if (siegeNotifier != null) {
+            siegeNotifier.stop();
+        }
         super.shutdown();
     }
 
