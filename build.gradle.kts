@@ -16,14 +16,16 @@ repositories {
 
 dependencies {
     compileOnly(files("libs/HytaleServer.jar"))
-    
+    compileOnly(files("libs/SimpleClaims.jar"))
+
     //c dependencies (will be bundled in JAR)
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("org.jetbrains:annotations:24.1.0")
     implementation("org.xerial:sqlite-jdbc:3.46.0.0")
-    
+
     //test dependencies
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+    testImplementation(files("libs/HytaleServer.jar"))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

@@ -8,10 +8,7 @@ import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayer
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.townssiege.hytale.commands.subcommands.SiegeEndCommand;
 import com.townssiege.hytale.commands.subcommands.SiegeInfoCommand;
-import com.townssiege.hytale.commands.subcommands.SiegeJoinCommand;
-import com.townssiege.hytale.commands.subcommands.SiegeStartCommand;
 
 import javax.annotation.Nonnull;
 
@@ -20,10 +17,7 @@ public final class SiegeCommand extends AbstractPlayerCommand {
     public SiegeCommand() {
         super("siege", "TownsSiege main command");
 
-        addSubCommand(new SiegeStartCommand());
-        addSubCommand(new SiegeEndCommand());
         addSubCommand(new SiegeInfoCommand());
-        addSubCommand(new SiegeJoinCommand());
     }
 
     @Override

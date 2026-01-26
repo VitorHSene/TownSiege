@@ -11,7 +11,7 @@
   "Main": "com.townssiege.TownsSiege",
   "ServerVersion": "*",
   "IncludesAssetPack": false,
-  "Dependencies": {},
+  "Dependencies": {"Buuz135:SimpleClaims": "*"},
   "OptionalDependencies": {},
   "DisabledByDefault": false
 }

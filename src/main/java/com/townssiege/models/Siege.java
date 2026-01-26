@@ -1,5 +1,6 @@
 package com.townssiege.models;
 
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.townssiege.utils.TimeProvider;
 
 import java.util.UUID;
@@ -13,9 +14,10 @@ public class Siege {
     private final long bannerInterval;
     private final long bannerDuration;
     private final long siegeDuration;
+    private final Vector3i bannerLocation;
 
     public Siege(TimeProvider timeProvider, long bannerInterval, long bannerDuration, long siegeDuration,
-                 UUID initialAttackerId, UUID initialDefenderId) {
+                 UUID initialAttackerId, UUID initialDefenderId, Vector3i bannerLocation) {
         this.attackers = new Team(TeamRole.ATTACKER);
         this.defenders = new Team(TeamRole.DEFENDER);
         this.timeProvider = timeProvider;
@@ -23,6 +25,7 @@ public class Siege {
         this.bannerInterval = bannerInterval;
         this.bannerDuration = bannerDuration;
         this.siegeDuration = siegeDuration;
+        this.bannerLocation = bannerLocation;
 
         this.attackers.addPlayer(initialAttackerId);
         this.defenders.addPlayer(initialDefenderId);
@@ -114,5 +117,9 @@ public class Siege {
 
     public Team getDefenders() {
         return defenders;
+    }
+
+    public Vector3i getBannerLocation() {
+        return bannerLocation;
     }
 }

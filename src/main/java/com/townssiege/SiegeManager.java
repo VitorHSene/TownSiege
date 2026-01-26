@@ -1,5 +1,6 @@
 package com.townssiege;
 
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.townssiege.models.Siege;
 import com.townssiege.utils.SystemTimeProvider;
 import com.townssiege.utils.TimeProvider;
@@ -26,12 +27,12 @@ public class SiegeManager {
         this.siegeDuration = siegeDuration;
     }
 
-    public boolean startSiege(UUID territoryId, UUID attackerId, UUID defenderId) {
+    public boolean startSiege(UUID territoryId, UUID attackerId, UUID defenderId, Vector3i bannerLocation) {
         if (activeSieges.containsKey(territoryId)) {
             return false;
         }
         activeSieges.put(territoryId, new Siege(timeProvider, bannerInterval, bannerDuration, siegeDuration,
-                attackerId, defenderId));
+                attackerId, defenderId, bannerLocation));
         return true;
     }
 

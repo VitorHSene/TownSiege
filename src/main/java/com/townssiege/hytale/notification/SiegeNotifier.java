@@ -118,7 +118,9 @@ public class SiegeNotifier {
     }
 
     private void sendMessage(UUID playerId, String message) {
-        PlayerRef player = Universe.get().getPlayer(playerId);
+        Universe universe = Universe.get();
+        if (universe == null) return;
+        PlayerRef player = universe.getPlayer(playerId);
         if (player != null) player.sendMessage(Message.raw(message));
     }
 

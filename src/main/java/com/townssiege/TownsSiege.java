@@ -26,7 +26,6 @@ public class TownsSiege extends JavaPlugin {
     protected void setup() {
         super.setup();
         this.getEntityStoreRegistry().registerSystem(new PlaceBannerEvent());
-
         this.getLogger().at(Level.INFO).log("Initializing TownsSiege");
         this.siegeManager = new SiegeManager(3 * HOUR, 1 * HOUR, 24 * HOUR);
         this.siegeNotifier = new SiegeNotifier(siegeManager);
