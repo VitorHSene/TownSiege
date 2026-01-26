@@ -1,11 +1,18 @@
 package com.townssiege.hytale.notification;
 
+import com.buuz135.simpleclaims.claim.ClaimManager;
+import com.buuz135.simpleclaims.claim.chunk.ChunkInfo;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
+import com.townssiege.hytale.integration.SimpleClaimsIntegration;
 import com.townssiege.models.Siege;
+import com.townssiege.models.Team;
+import com.townssiege.models.TeamRole;
 import com.townssiege.SiegeManager;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -48,6 +55,8 @@ public class SiegeNotifier {
         Map<UUID, Siege> activeSieges = siegeManager.getActiveSieges();
         notifiedStates.keySet().removeIf(id -> !activeSieges.containsKey(id));
 
+        List<UUID> expiredSieges = new ArrayList<>();
+
         for (Map.Entry<UUID, Siege> entry : activeSieges.entrySet()) {
             UUID territoryId = entry.getKey();
             Siege siege = entry.getValue();
@@ -61,6 +70,17 @@ public class SiegeNotifier {
             }
 
             checkNotifiedState(siege, state);
+
+            if (siege.isSiegeExpired() && !state.claimTransferred) {
+                state.claimTransferred = true;
+                handleSiegeEnd(siege);
+                expiredSieges.add(territoryId);
+            }
+        }
+
+        for (UUID territoryId : expiredSieges) {
+            siegeManager.endSiege(territoryId);
+            notifiedStates.remove(territoryId);
         }
     }
 
@@ -88,16 +108,55 @@ public class SiegeNotifier {
 
     private void checkSiegeExpiration(Siege siege, NotifiedState state) {
         if (siege.isSiegeExpired()) {
-            if (!state.siegeEnded) {
-                state.siegeEnded = true;
-                var winner = siege.getWinner();
-                broadcastToSiege(siege, winner != null
-                    ? "[Siege] Siege has ended! Winner: " + winner.getRole().name()
-                    : "[Siege] Siege has ended in a tie!");
-            }
             return;
         }
         checkTimeWarning(siege, state.siegeWarnings, siege.getRemainingSiegeTime(), "Siege ends");
+    }
+
+    private void handleSiegeEnd(Siege siege) {
+        Team winner = siege.getWinner();
+
+        if (winner == null) {
+            broadcastToSiege(siege, "[Siege] The siege ended in a draw! Territory remains with defenders.");
+            return;
+        }
+
+        boolean attackersWon = winner.getRole() == TeamRole.ATTACKER;
+
+        if (attackersWon) {
+            boolean transferred = transferClaimToAttacker(siege);
+            if (transferred) {
+                broadcastToSiege(siege, "[Siege] Attackers won! Territory has been conquered!");
+            } else {
+                broadcastToSiege(siege, "[Siege] Attackers won but claim transfer failed!");
+            }
+        } else {
+            broadcastToSiege(siege, "[Siege] Defenders won! Territory remains protected.");
+        }
+    }
+
+    private boolean transferClaimToAttacker(Siege siege) {
+        ChunkInfo claim = ClaimManager.getInstance().getChunk(
+                siege.getDimension(),
+                siege.getChunkX(),
+                siege.getChunkZ()
+        );
+
+        if (claim == null) {
+            return false;
+        }
+
+        UUID attackerLeader = siege.getAttackers().getPlayers().stream().findFirst().orElse(null);
+        if (attackerLeader == null) {
+            return false;
+        }
+
+        UUID attackerPartyId = SimpleClaimsIntegration.getPlayerParty(attackerLeader);
+        if (attackerPartyId == null) {
+            return false;
+        }
+
+        return SimpleClaimsIntegration.transferClaim(siege.getDimension(), claim, attackerPartyId);
     }
 
     private void checkTimeWarning(Siege siege, TimeWarnings warnings, long remaining, String prefix) {
@@ -126,7 +185,7 @@ public class SiegeNotifier {
 
     private static class NotifiedState {
         boolean wasBannerActive = false;
-        boolean siegeEnded = false;
+        boolean claimTransferred = false;
         final TimeWarnings bannerWarnings = new TimeWarnings();
         final TimeWarnings siegeWarnings = new TimeWarnings();
     }

@@ -2,7 +2,6 @@ package com.townssiege;
 
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.townssiege.models.Siege;
-import com.townssiege.models.Territory;
 import com.townssiege.utils.FakeTimeProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,35 +39,40 @@ class TownsSiegeTest {
         return new Vector3i(random.nextInt(1000), random.nextInt(256), random.nextInt(1000));
     }
 
+    private void startTestSiege(UUID territoryId) {
+        siegeManager.startSiege(territoryId, attackerId, defenderId, randomBannerPos(),
+                "test_dimension", random.nextInt(100), random.nextInt(100));
+    }
+
     @Test
     void startSiege() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        assertTrue(siegeManager.isUnderSiege(territory.getId()));
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        assertTrue(siegeManager.isUnderSiege(territoryId));
     }
 
     @Test
     void endSiege() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        siegeManager.endSiege(territory.getId());
-        assertFalse(siegeManager.isUnderSiege(territory.getId()));
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        siegeManager.endSiege(territoryId);
+        assertFalse(siegeManager.isUnderSiege(territoryId));
     }
 
     @Test
     void getSiege() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
         assertNotNull(siege);
     }
 
     @Test
     void addAttacker() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
 
-        Siege siege = siegeManager.getSiege(territory.getId());
+        Siege siege = siegeManager.getSiege(territoryId);
 
         UUID attackerId = UUID.randomUUID();
         siege.addAttacker(attackerId);
@@ -78,10 +82,10 @@ class TownsSiegeTest {
 
     @Test
     void add2Attackers() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
 
-        Siege siege = siegeManager.getSiege(territory.getId());
+        Siege siege = siegeManager.getSiege(territoryId);
 
         UUID attackerId = UUID.randomUUID();
         siege.addAttacker(attackerId);
@@ -95,9 +99,9 @@ class TownsSiegeTest {
 
     @Test
     void addDefender() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
         UUID defenderId = UUID.randomUUID();
         siege.addDefender(defenderId);
 
@@ -106,10 +110,10 @@ class TownsSiegeTest {
 
     @Test
     void add2Defenders() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
 
-        Siege siege = siegeManager.getSiege(territory.getId());
+        Siege siege = siegeManager.getSiege(territoryId);
 
         UUID defenderId = UUID.randomUUID();
         siege.addDefender(defenderId);
@@ -123,9 +127,9 @@ class TownsSiegeTest {
 
     @Test
     void isSameTeam() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
         UUID attackerId = UUID.randomUUID();
         siege.addAttacker(attackerId);
         UUID attacker2Id = UUID.randomUUID();
@@ -136,9 +140,9 @@ class TownsSiegeTest {
 
     @Test
     void isAtSiege() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
         UUID attackerId = UUID.randomUUID();
         siege.addAttacker(attackerId);
         UUID attacker2Id = UUID.randomUUID();
@@ -149,9 +153,9 @@ class TownsSiegeTest {
 
     @Test
     void addPointsToTeam() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
 
         UUID attackerId = UUID.randomUUID();
         siege.addAttacker(attackerId);
@@ -167,9 +171,9 @@ class TownsSiegeTest {
 
     @Test
     void getWinner() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
 
         UUID attackerId = UUID.randomUUID();
         siege.addAttacker(attackerId);
@@ -184,18 +188,18 @@ class TownsSiegeTest {
 
     @Test
     void bannerActiveAtStart() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
 
         assertTrue(siege.isBannerActive());
     }
 
     @Test
     void bannerInactiveAfterDuration() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
 
         timeProvider.advance(BANNER_DURATION);
 
@@ -204,9 +208,9 @@ class TownsSiegeTest {
 
     @Test
     void bannerActiveAgainAfterInterval() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
 
         timeProvider.advance(BANNER_INTERVAL);
 
@@ -215,9 +219,9 @@ class TownsSiegeTest {
 
     @Test
     void bannerInactiveBetweenIntervals() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
 
         timeProvider.advance(BANNER_DURATION + MINUTE);
 
@@ -226,9 +230,9 @@ class TownsSiegeTest {
 
     @Test
     void siegeNotExpiredBeforeDuration() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
 
         timeProvider.advance(SIEGE_DURATION - MINUTE);
 
@@ -237,9 +241,9 @@ class TownsSiegeTest {
 
     @Test
     void siegeExpiredAfterDuration() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
 
         timeProvider.advance(SIEGE_DURATION);
 
@@ -248,9 +252,9 @@ class TownsSiegeTest {
 
     @Test
     void bannerInactiveWhenSiegeExpired() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
 
         timeProvider.advance(SIEGE_DURATION);
 
@@ -259,9 +263,9 @@ class TownsSiegeTest {
 
     @Test
     void timeUntilBannerActiveWhenInactive() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
 
         timeProvider.advance(BANNER_DURATION);
 
@@ -271,18 +275,18 @@ class TownsSiegeTest {
 
     @Test
     void timeUntilBannerActiveWhenActive() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
 
         assertEquals(0, siege.getTimeUntilBannerActive());
     }
 
     @Test
     void remainingBannerTimeWhenActive() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
 
         timeProvider.advance(10 * MINUTE);
 
@@ -292,9 +296,9 @@ class TownsSiegeTest {
 
     @Test
     void remainingBannerTimeWhenInactive() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
 
         timeProvider.advance(BANNER_DURATION);
 
@@ -303,9 +307,9 @@ class TownsSiegeTest {
 
     @Test
     void remainingSiegeTime() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
 
         timeProvider.advance(6 * HOUR);
 
@@ -315,9 +319,9 @@ class TownsSiegeTest {
 
     @Test
     void multipleBannerCycles() {
-        Territory territory = new Territory();
-        siegeManager.startSiege(territory.getId(), attackerId, defenderId, randomBannerPos());
-        Siege siege = siegeManager.getSiege(territory.getId());
+        UUID territoryId = UUID.randomUUID();
+        startTestSiege(territoryId);
+        Siege siege = siegeManager.getSiege(territoryId);
 
         assertTrue(siege.isBannerActive());
 

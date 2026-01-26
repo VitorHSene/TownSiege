@@ -15,9 +15,13 @@ public class Siege {
     private final long bannerDuration;
     private final long siegeDuration;
     private final Vector3i bannerLocation;
+    private final String dimension;
+    private final int chunkX;
+    private final int chunkZ;
 
     public Siege(TimeProvider timeProvider, long bannerInterval, long bannerDuration, long siegeDuration,
-                 UUID initialAttackerId, UUID initialDefenderId, Vector3i bannerLocation) {
+                 UUID initialAttackerId, UUID initialDefenderId, Vector3i bannerLocation,
+                 String dimension, int chunkX, int chunkZ) {
         this.attackers = new Team(TeamRole.ATTACKER);
         this.defenders = new Team(TeamRole.DEFENDER);
         this.timeProvider = timeProvider;
@@ -26,6 +30,9 @@ public class Siege {
         this.bannerDuration = bannerDuration;
         this.siegeDuration = siegeDuration;
         this.bannerLocation = bannerLocation;
+        this.dimension = dimension;
+        this.chunkX = chunkX;
+        this.chunkZ = chunkZ;
 
         this.attackers.addPlayer(initialAttackerId);
         this.defenders.addPlayer(initialDefenderId);
@@ -121,5 +128,17 @@ public class Siege {
 
     public Vector3i getBannerLocation() {
         return bannerLocation;
+    }
+
+    public String getDimension() {
+        return dimension;
+    }
+
+    public int getChunkX() {
+        return chunkX;
+    }
+
+    public int getChunkZ() {
+        return chunkZ;
     }
 }

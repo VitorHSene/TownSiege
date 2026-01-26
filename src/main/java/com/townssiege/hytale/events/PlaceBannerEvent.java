@@ -8,72 +8,110 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.townssiege.TownsSiege;
 import com.townssiege.hytale.integration.SimpleClaimsIntegration;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nonnull;
 import java.util.Objects;
 import java.util.UUID;
 
 public class PlaceBannerEvent extends EntityEventSystem<EntityStore, PlaceBlockEvent> {
 
+    private static final String SIEGE_BANNER_ITEM_ID = "Furniture_Temple_Light_Brazier";
+
     public PlaceBannerEvent() {
         super(PlaceBlockEvent.class);
     }
 
+    @Nonnull
     @Override
     public Query<EntityStore> getQuery() {
-        return Archetype.empty();
+        return Query.and(Player.getComponentType());
     }
 
     @Override
     public void handle(int i, @NotNull ArchetypeChunk<EntityStore> archetypeChunk, @NotNull Store<EntityStore> store, @NotNull CommandBuffer<EntityStore> commandBuffer, @NotNull PlaceBlockEvent placeBlockEvent) {
+        if (!isSiegeBanner(placeBlockEvent)) {
+            return;
+        }
 
-        if (Objects.equals(placeBlockEvent.getItemInHand().getItemId(), "Furniture_Temple_Light_Brazier")) {
-            Ref<EntityStore> ref = archetypeChunk.getReferenceTo(i);
-            Player playerComponent = store.getComponent(ref, Player.getComponentType());
+        Ref<EntityStore> ref = archetypeChunk.getReferenceTo(i);
+        Player player = store.getComponent(ref, Player.getComponentType());
+        if (player == null) {
+            return;
+        }
 
-            if (playerComponent != null) {
-                Vector3i bannerPos = placeBlockEvent.getTargetBlock();
+        var reference = player.getReference();
+        if (reference == null) {
+            return;
+        }
 
-                UUID attackerId = playerComponent.getUuid();
+        PlayerRef playerRef = store.getComponent(reference, PlayerRef.getComponentType());
+        if (playerRef == null) {
+            return;
+        }
 
-                ChunkInfo nearestClaim = SimpleClaimsIntegration.findNearestClaim(
-                        playerComponent.getWorld().getName(),
-                        bannerPos.getX(),
-                        bannerPos.getZ()
-                );
+        handleSiegeBannerPlacement(player, playerRef, placeBlockEvent.getTargetBlock());
+    }
 
-                if (nearestClaim == null) {
-                    playerComponent.sendMessage(Message.raw("No territory found within range!"));
-                    return;
-                }
+    private boolean isSiegeBanner(PlaceBlockEvent event) {
+        var item = event.getItemInHand();
+        return item != null && Objects.equals(item.getItemId(), SIEGE_BANNER_ITEM_ID);
+    }
 
-                // Get defender (claim owner)
-                UUID defenderId = SimpleClaimsIntegration.getClaimOwner(nearestClaim);
-                if (defenderId == null) {
-                    playerComponent.sendMessage(Message.raw("Could not find territory owner!"));
-                    return;
-                }
+    private void handleSiegeBannerPlacement(Player player, PlayerRef playerRef, Vector3i bannerPos) {
+        var world = player.getWorld();
+        if (world == null) {
+            return;
+        }
 
-                // Prevent self-siege
-                if (attackerId.equals(defenderId)) {
-                    playerComponent.sendMessage(Message.raw("You cannot siege your own territory!"));
-                    return;
-                }
+        UUID attackerId = playerRef.getUuid();
 
-                // Start the siege using party UUID as territory ID
-                UUID territoryId = nearestClaim.getPartyOwner();
-                boolean started = TownsSiege.getInstance().getSiegeManager()
-                        .startSiege(territoryId, attackerId, defenderId, bannerPos);
+        if (TownsSiege.getInstance().getSiegeManager().isPlayerAtSiege(attackerId)) {
+            player.sendMessage(Message.raw("You are already participating in a siege!"));
+            return;
+        }
 
-                if (started) {
-                    playerComponent.sendMessage(Message.raw("Siege started! You are attacking this territory."));
-                } else {
-                    playerComponent.sendMessage(Message.raw("A siege is already in progress for this territory!"));
-                }
-            }
+        ChunkInfo nearestClaim = SimpleClaimsIntegration.findNearestClaim(
+                world.getName(),
+                bannerPos.getX(),
+                bannerPos.getZ()
+        );
+
+        if (nearestClaim == null) {
+            player.sendMessage(Message.raw("No territory found within range!"));
+            return;
+        }
+
+        UUID defenderId = SimpleClaimsIntegration.getClaimOwner(nearestClaim);
+        if (defenderId == null) {
+            player.sendMessage(Message.raw("Could not find territory owner!"));
+            return;
+        }
+
+        if (attackerId.equals(defenderId)) {
+            player.sendMessage(Message.raw("You cannot siege your own territory!"));
+            return;
+        }
+
+        startSiege(player, nearestClaim, attackerId, defenderId, bannerPos);
+    }
+
+    private void startSiege(Player player, ChunkInfo claim, UUID attackerId, UUID defenderId, Vector3i bannerPos) {
+        UUID territoryId = claim.getPartyOwner();
+        String dimension = player.getWorld().getName();
+
+        boolean started = TownsSiege.getInstance().getSiegeManager()
+                .startSiege(territoryId, attackerId, defenderId, bannerPos,
+                        dimension, claim.getChunkX(), claim.getChunkZ());
+
+        if (started) {
+            player.sendMessage(Message.raw("Siege started! You are attacking this territory."));
+        } else {
+            player.sendMessage(Message.raw("A siege is already in progress for this territory!"));
         }
     }
 }
