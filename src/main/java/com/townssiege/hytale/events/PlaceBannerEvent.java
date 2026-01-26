@@ -10,7 +10,7 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.townssiege.TownsSiege;
-import com.townssiege.integration.SimpleClaimsIntegration;
+import com.townssiege.hytale.integration.SimpleClaimsIntegration;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;

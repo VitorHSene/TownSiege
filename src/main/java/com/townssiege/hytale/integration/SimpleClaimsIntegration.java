@@ -1,4 +1,4 @@
-package com.townssiege.integration;
+package com.townssiege.hytale.integration;
 
 import com.buuz135.simpleclaims.claim.ClaimManager;
 import com.buuz135.simpleclaims.claim.chunk.ChunkInfo;
@@ -20,12 +20,10 @@ public class SimpleClaimsIntegration {
         ChunkInfo nearestClaim = null;
         double nearestDistance = Double.MAX_VALUE;
 
-        // Iterate through all chunks within radius
         for (int cx = centerChunkX - SEARCH_RADIUS_CHUNKS; cx <= centerChunkX + SEARCH_RADIUS_CHUNKS; cx++) {
             for (int cz = centerChunkZ - SEARCH_RADIUS_CHUNKS; cz <= centerChunkZ + SEARCH_RADIUS_CHUNKS; cz++) {
                 ChunkInfo claim = ClaimManager.getInstance().getChunk(dimension, cx, cz);
                 if (claim != null) {
-                    // Calculate distance from position to chunk center
                     int chunkCenterX = ChunkUtil.minBlock(claim.getChunkX()) + 8;
                     int chunkCenterZ = ChunkUtil.minBlock(claim.getChunkZ()) + 8;
 
