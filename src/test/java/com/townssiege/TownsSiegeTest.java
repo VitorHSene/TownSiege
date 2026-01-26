@@ -1,7 +1,6 @@
 package com.townssiege;
 
 import com.townssiege.models.Siege;
-import com.townssiege.models.SiegeManager;
 import com.townssiege.models.Territory;
 import com.townssiege.utils.FakeTimeProvider;
 import org.junit.jupiter.api.BeforeEach;

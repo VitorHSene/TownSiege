@@ -2,9 +2,9 @@ package com.townssiege;
 
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
-import com.townssiege.commands.SiegeCommand;
-import com.townssiege.models.SiegeManager;
-import com.townssiege.notification.SiegeNotifier;
+import com.townssiege.hytale.commands.SiegeCommand;
+import com.townssiege.hytale.events.PlaceBannerEvent;
+import com.townssiege.hytale.notification.SiegeNotifier;
 
 import java.util.logging.Level;
 
@@ -25,6 +25,7 @@ public class TownsSiege extends JavaPlugin {
     @Override
     protected void setup() {
         super.setup();
+        this.getEntityStoreRegistry().registerSystem(new PlaceBannerEvent());
 
         this.getLogger().at(Level.INFO).log("Initializing TownsSiege");
         this.siegeManager = new SiegeManager(3 * HOUR, 1 * HOUR, 24 * HOUR);

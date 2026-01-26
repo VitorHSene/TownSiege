@@ -1,5 +1,6 @@
-package com.townssiege.models;
+package com.townssiege;
 
+import com.townssiege.models.Siege;
 import com.townssiege.utils.SystemTimeProvider;
 import com.townssiege.utils.TimeProvider;
 
