@@ -6,6 +6,7 @@ import com.townssiege.hytale.commands.SiegeCommand;
 import com.townssiege.hytale.events.BannerTickSystem;
 import com.townssiege.hytale.events.PlaceBannerEvent;
 import com.townssiege.hytale.events.PlayerDeathSystem;
+import com.townssiege.hytale.events.SiegeBlockBreakEvent;
 import com.townssiege.hytale.notification.SiegeNotifier;
 
 import java.util.logging.Level;
@@ -31,6 +32,7 @@ public class TownsSiege extends JavaPlugin {
         this.getEntityStoreRegistry().registerSystem(new PlaceBannerEvent());
         this.getEntityStoreRegistry().registerSystem(new BannerTickSystem());
         this.getEntityStoreRegistry().registerSystem(new PlayerDeathSystem());
+        this.getEntityStoreRegistry().registerSystem(new SiegeBlockBreakEvent());
         this.getLogger().at(Level.INFO).log("Initializing TownsSiege");
         this.siegeManager = new SiegeManager(3 * MINUTE, 1 * MINUTE, 24 * MINUTE);
         this.siegeNotifier = new SiegeNotifier(siegeManager);

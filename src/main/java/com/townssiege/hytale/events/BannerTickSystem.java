@@ -13,7 +13,9 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.townssiege.SiegeManager;
 import com.townssiege.TownsSiege;
+import com.townssiege.hytale.notification.SiegeMessages;
 import com.townssiege.models.Siege;
+import com.townssiege.models.Team;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
@@ -64,6 +66,10 @@ public class BannerTickSystem extends EntityTickingSystem<EntityStore> {
 
         if (ticks >= REWARD_INTERVAL_TICKS) {
             siege.addPoints(playerId, POINTS_PER_REWARD);
+            Team team = siege.getPlayerTeam(playerId);
+            if (team != null) {
+                playerRef.sendMessage(SiegeMessages.pointsEarnedTerritory(POINTS_PER_REWARD, team.getPoints()));
+            }
             ticks = 0;
         }
 

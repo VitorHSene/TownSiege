@@ -7,6 +7,9 @@ import com.buuz135.simpleclaims.files.DatabaseManager;
 import com.hypixel.hytale.math.util.ChunkUtil;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -60,6 +63,22 @@ public class SimpleClaimsIntegration {
 
     public static UUID getPlayerParty(UUID playerId) {
         return ClaimManager.getInstance().getPlayerToParty().get(playerId);
+    }
+
+    public static Map<String, List<ChunkInfo>> getAllChunksByParty(UUID partyId) {
+        Map<String, List<ChunkInfo>> result = new HashMap<>();
+        HashMap<String, HashMap<String, ChunkInfo>> allChunks = ClaimManager.getInstance().getChunks();
+
+        for (Map.Entry<String, HashMap<String, ChunkInfo>> dimensionEntry : allChunks.entrySet()) {
+            String dimension = dimensionEntry.getKey();
+            for (ChunkInfo chunk : dimensionEntry.getValue().values()) {
+                if (chunk.getPartyOwner().equals(partyId)) {
+                    result.computeIfAbsent(dimension, k -> new ArrayList<>()).add(chunk);
+                }
+            }
+        }
+
+        return result;
     }
 
     @SuppressWarnings("unchecked")

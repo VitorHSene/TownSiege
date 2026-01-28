@@ -1,28 +1,32 @@
 package com.townssiege.hytale.events;
 
+import com.buuz135.simpleclaims.claim.ClaimManager;
 import com.buuz135.simpleclaims.claim.chunk.ChunkInfo;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.EntityEventSystem;
+import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
+import com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.townssiege.TownsSiege;
 import com.townssiege.hytale.integration.SimpleClaimsIntegration;
+import com.townssiege.hytale.notification.SiegeMessages;
+import com.townssiege.models.Siege;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
-import java.util.Objects;
+import java.util.Map;
 import java.util.UUID;
 
-public class BreakBlockEvent extends EntityEventSystem<EntityStore, BreakBlockEvent> {
+public class SiegeBlockBreakEvent extends EntityEventSystem<EntityStore, BreakBlockEvent> {
 
-    private static final String SIEGE_BANNER_ITEM_ID = "Furniture_Temple_Light_Brazier";
+    private static final int PROTECTION_RADIUS = 40;
+    private static final int PROTECTION_RADIUS_SQ = PROTECTION_RADIUS * PROTECTION_RADIUS;
 
-    public BreakBlockEvent() {
+    public SiegeBlockBreakEvent() {
         super(BreakBlockEvent.class);
     }
 
@@ -34,10 +38,6 @@ public class BreakBlockEvent extends EntityEventSystem<EntityStore, BreakBlockEv
 
     @Override
     public void handle(int i, @NotNull ArchetypeChunk<EntityStore> archetypeChunk, @NotNull Store<EntityStore> store, @NotNull CommandBuffer<EntityStore> commandBuffer, @NotNull BreakBlockEvent breakBlockEvent) {
-        if (!isSiegeBanner(placeBlockEvent)) {
-            return;
-        }
-
         Ref<EntityStore> ref = archetypeChunk.getReferenceTo(i);
         Player player = store.getComponent(ref, Player.getComponentType());
         if (player == null) {
@@ -54,65 +54,62 @@ public class BreakBlockEvent extends EntityEventSystem<EntityStore, BreakBlockEv
             return;
         }
 
-        handleSiegeBannerPlacement(player, playerRef, placeBlockEvent.getTargetBlock());
+        Vector3i blockPos = breakBlockEvent.getTargetBlock();
+
+        if (shouldProtectBlock(player, playerRef, blockPos, breakBlockEvent)) {
+            return;
+        }
     }
 
-    private boolean isSiegeBanner(PlaceBlockEvent event) {
-        var item = event.getItemInHand();
-        return item != null && Objects.equals(item.getItemId(), SIEGE_BANNER_ITEM_ID);
-    }
+    private boolean shouldProtectBlock(Player player, PlayerRef playerRef, Vector3i blockPos, BreakBlockEvent event) {
+        Map<UUID, Siege> sieges = TownsSiege.getInstance().getSiegeManager().getActiveSieges();
+        if (sieges.isEmpty()) {
+            return false;
+        }
 
-    private void handleSiegeBannerPlacement(Player player, PlayerRef playerRef, Vector3i bannerPos) {
         var world = player.getWorld();
         if (world == null) {
-            return;
+            return false;
         }
 
-        UUID attackerId = playerRef.getUuid();
+        String dimension = world.getName();
+        UUID playerId = playerRef.getUuid();
 
-        if (TownsSiege.getInstance().getSiegeManager().isPlayerAtSiege(attackerId)) {
-            player.sendMessage(Message.raw("You are already participating in a siege!"));
-            return;
+        for (Siege siege : sieges.values()) {
+            if (!siege.getDimension().equals(dimension)) {
+                continue;
+            }
+
+            Vector3i bannerPos = siege.getBannerLocation();
+            int dx = blockPos.getX() - bannerPos.getX();
+            int dy = blockPos.getY() - bannerPos.getY();
+            int dz = blockPos.getZ() - bannerPos.getZ();
+            int distSq = dx * dx + dy * dy + dz * dz;
+
+            if (distSq <= PROTECTION_RADIUS_SQ) {
+                // Block is within protection radius - check if player is defender in their own claim
+                if (siege.isDefender(playerId)) {
+                    int chunkX = ChunkUtil.chunkCoordinate(blockPos.getX());
+                    int chunkZ = ChunkUtil.chunkCoordinate(blockPos.getZ());
+                    ChunkInfo claim = ClaimManager.getInstance().getChunk(dimension, chunkX, chunkZ);
+
+                    if (claim != null) {
+                        UUID defenderParty = SimpleClaimsIntegration.getPlayerParty(playerId);
+                        if (defenderParty != null && claim.getPartyOwner().equals(defenderParty)) {
+                            // Defender breaking block in their own claim - allow it
+                            return false;
+                        }
+                    }
+                }
+
+                // Block protected - cancel the event
+                event.setCancelled(true);
+                player.sendMessage(SiegeMessages.cannotBreakNearBanner());
+                return true;
+            }
         }
 
-        ChunkInfo nearestClaim = SimpleClaimsIntegration.findNearestClaim(
-                world.getName(),
-                bannerPos.getX(),
-                bannerPos.getZ()
-        );
-
-        if (nearestClaim == null) {
-            player.sendMessage(Message.raw("No territory found within range!"));
-            return;
-        }
-
-        UUID defenderId = SimpleClaimsIntegration.getClaimOwner(nearestClaim);
-        if (defenderId == null) {
-            player.sendMessage(Message.raw("Could not find territory owner!"));
-            return;
-        }
-
-        if (attackerId.equals(defenderId)) {
-            player.sendMessage(Message.raw("You cannot siege your own territory!"));
-            return;
-        }
-
-        startSiege(player, nearestClaim, attackerId, defenderId, bannerPos);
-    }
-
-    private void startSiege(Player player, ChunkInfo claim, UUID attackerId, UUID defenderId, Vector3i bannerPos) {
-        UUID territoryId = claim.getPartyOwner();
-        String dimension = player.getWorld().getName();
-
-        boolean started = TownsSiege.getInstance().getSiegeManager()
-                .startSiege(territoryId, attackerId, defenderId, bannerPos,
-                        dimension, claim.getChunkX(), claim.getChunkZ());
-
-        if (started) {
-            player.sendMessage(Message.raw("Siege started! You are attacking this territory."));
-        } else {
-            player.sendMessage(Message.raw("A siege is already in progress for this territory!"));
-        }
+        return false;
     }
 }
 

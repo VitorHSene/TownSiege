@@ -26,11 +26,7 @@ public class Team {
         players.add(playerId);
         return true;
     }
-
-    public boolean removePlayer(UUID playerId) {
-        return players.remove(playerId);
-    }
-
+    
     public boolean hasPlayer(UUID playerId) {
         return players.contains(playerId);
     }
@@ -45,9 +41,5 @@ public class Team {
 
     public void addPoints(int amount) {
         this.points += amount;
-    }
-
-    public void setPoints(int points) {
-        this.points = points;
     }
 }

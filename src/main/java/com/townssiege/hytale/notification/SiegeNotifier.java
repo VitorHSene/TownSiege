@@ -26,6 +26,7 @@ public class SiegeNotifier {
 
     private static final long FIVE_MINUTES = 5 * 60 * 1000;
     private static final long ONE_MINUTE = 60 * 1000;
+    private static final long THIRTY_SECONDS = 30 * 1000;
 
     private final SiegeManager siegeManager;
     private final ScheduledExecutorService scheduler;
@@ -65,8 +66,9 @@ public class SiegeNotifier {
             NotifiedState state = notifiedStates.computeIfAbsent(territoryId, k -> new NotifiedState());
 
             if (isNew) {
-                broadcastToSiege(siege, "[Siege] A siege has begun! Prepare for battle!");
+                broadcastToSiege(siege, SiegeMessages.siegeStarted());
                 state.wasBannerActive = siege.isBannerActive();
+                state.lastScoreUpdate = System.currentTimeMillis();
             }
 
             checkNotifiedState(siege, state);
@@ -87,6 +89,17 @@ public class SiegeNotifier {
     private void checkNotifiedState(Siege siege, NotifiedState state) {
         checkBannerState(siege, state);
         checkSiegeExpiration(siege, state);
+        checkScoreUpdate(siege, state);
+    }
+
+    private void checkScoreUpdate(Siege siege, NotifiedState state) {
+        long now = System.currentTimeMillis();
+        if (now - state.lastScoreUpdate >= THIRTY_SECONDS) {
+            state.lastScoreUpdate = now;
+            int attackerPoints = siege.getAttackers().getPoints();
+            int defenderPoints = siege.getDefenders().getPoints();
+            broadcastToSiege(siege, SiegeMessages.scoreUpdate(attackerPoints, defenderPoints));
+        }
     }
 
     private void checkBannerState(Siege siege, NotifiedState state) {
@@ -94,30 +107,33 @@ public class SiegeNotifier {
 
         if (active == state.wasBannerActive) {
             if (!active && !siege.isSiegeExpired()) {
-                checkTimeWarning(siege, state.bannerWarnings, siege.getTimeUntilBannerActive(), "Banner activates");
+                checkTimeWarning(siege, state.bannerWarnings, siege.getTimeUntilBannerActive(), true);
             }
             return;
         }
 
         state.wasBannerActive = active;
         state.bannerWarnings.reset();
-        broadcastToSiege(siege, active
-            ? "[Siege] The banner is now ACTIVE! Capture it!"
-            : "[Siege] The banner is no longer active.");
+        broadcastToSiege(siege, active ? SiegeMessages.bannerActive() : SiegeMessages.bannerInactive());
     }
 
     private void checkSiegeExpiration(Siege siege, NotifiedState state) {
         if (siege.isSiegeExpired()) {
             return;
         }
-        checkTimeWarning(siege, state.siegeWarnings, siege.getRemainingSiegeTime(), "Siege ends");
+        checkTimeWarning(siege, state.siegeWarnings, siege.getRemainingSiegeTime(), false);
     }
 
     private void handleSiegeEnd(Siege siege) {
         Team winner = siege.getWinner();
 
+        // Final score announcement
+        int attackerPoints = siege.getAttackers().getPoints();
+        int defenderPoints = siege.getDefenders().getPoints();
+        broadcastToSiege(siege, SiegeMessages.scoreUpdate(attackerPoints, defenderPoints));
+
         if (winner == null) {
-            broadcastToSiege(siege, "[Siege] The siege ended in a draw! Territory remains with defenders.");
+            broadcastToSiege(siege, SiegeMessages.siegeEndDraw());
             return;
         }
 
@@ -126,25 +142,27 @@ public class SiegeNotifier {
         if (attackersWon) {
             boolean transferred = transferClaimToAttacker(siege);
             if (transferred) {
-                broadcastToSiege(siege, "[Siege] Attackers won! Territory has been conquered!");
+                broadcastToSiege(siege, SiegeMessages.siegeEndAttackersWon());
             } else {
-                broadcastToSiege(siege, "[Siege] Attackers won but claim transfer failed!");
+                broadcastToSiege(siege, SiegeMessages.siegeEndAttackersWonTransferFailed());
             }
         } else {
-            broadcastToSiege(siege, "[Siege] Defenders won! Territory remains protected.");
+            broadcastToSiege(siege, SiegeMessages.siegeEndDefendersWon());
         }
     }
 
     private boolean transferClaimToAttacker(Siege siege) {
-        ChunkInfo claim = ClaimManager.getInstance().getChunk(
+        ChunkInfo originClaim = ClaimManager.getInstance().getChunk(
                 siege.getDimension(),
                 siege.getChunkX(),
                 siege.getChunkZ()
         );
 
-        if (claim == null) {
+        if (originClaim == null) {
             return false;
         }
+
+        UUID defenderPartyId = originClaim.getPartyOwner();
 
         UUID attackerLeader = siege.getAttackers().getPlayers().stream().findFirst().orElse(null);
         if (attackerLeader == null) {
@@ -156,36 +174,61 @@ public class SiegeNotifier {
             return false;
         }
 
-        return SimpleClaimsIntegration.transferClaim(siege.getDimension(), claim, attackerPartyId);
+        // Get all chunks owned by the defender's party
+        Map<String, List<ChunkInfo>> defenderChunks = SimpleClaimsIntegration.getAllChunksByParty(defenderPartyId);
+
+        if (defenderChunks.isEmpty()) {
+            return false;
+        }
+
+        // Transfer all chunks to the attacker
+        int transferred = 0;
+        for (Map.Entry<String, List<ChunkInfo>> entry : defenderChunks.entrySet()) {
+            String dimension = entry.getKey();
+            for (ChunkInfo chunk : entry.getValue()) {
+                if (SimpleClaimsIntegration.transferClaim(dimension, chunk, attackerPartyId)) {
+                    transferred++;
+                }
+            }
+        }
+
+        return transferred > 0;
     }
 
-    private void checkTimeWarning(Siege siege, TimeWarnings warnings, long remaining, String prefix) {
+    private void checkTimeWarning(Siege siege, TimeWarnings warnings, long remaining, boolean isBannerWarning) {
         if (remaining <= ONE_MINUTE && !warnings.sent1m) {
             warnings.sent1m = true;
-            broadcastToSiege(siege, "[Siege] " + prefix + " in 1 minute!");
+            Message msg = isBannerWarning
+                    ? SiegeMessages.bannerActivatesIn("1 minute")
+                    : SiegeMessages.siegeEndsIn("1 minute");
+            broadcastToSiege(siege, msg);
         } else if (remaining <= FIVE_MINUTES && !warnings.sent5m) {
             warnings.sent5m = true;
-            broadcastToSiege(siege, "[Siege] " + prefix + " in 5 minutes!");
+            Message msg = isBannerWarning
+                    ? SiegeMessages.bannerActivatesIn("5 minutes")
+                    : SiegeMessages.siegeEndsIn("5 minutes");
+            broadcastToSiege(siege, msg);
         }
     }
 
-    private void broadcastToSiege(Siege siege, String message) {
+    private void broadcastToSiege(Siege siege, Message message) {
         Set<UUID> attackers = siege.getAttackers().getPlayers();
         Set<UUID> defenders = siege.getDefenders().getPlayers();
         for (UUID playerId : attackers) sendMessage(playerId, message);
         for (UUID playerId : defenders) sendMessage(playerId, message);
     }
 
-    private void sendMessage(UUID playerId, String message) {
+    private void sendMessage(UUID playerId, Message message) {
         Universe universe = Universe.get();
         if (universe == null) return;
         PlayerRef player = universe.getPlayer(playerId);
-        if (player != null) player.sendMessage(Message.raw(message));
+        if (player != null) player.sendMessage(message);
     }
 
     private static class NotifiedState {
         boolean wasBannerActive = false;
         boolean claimTransferred = false;
+        long lastScoreUpdate = 0;
         final TimeWarnings bannerWarnings = new TimeWarnings();
         final TimeWarnings siegeWarnings = new TimeWarnings();
     }

@@ -9,9 +9,12 @@ import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
 import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.modules.entity.damage.DeathSystems;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.townssiege.TownsSiege;
+import com.townssiege.hytale.notification.SiegeMessages;
 import com.townssiege.models.Siege;
+import com.townssiege.models.Team;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -73,5 +76,15 @@ public class PlayerDeathSystem extends DeathSystems.OnDeathSystem {
         }
 
         siege.addPoints(killerId, KILL_POINTS);
+
+        // Notify the killer
+        Team team = siege.getPlayerTeam(killerId);
+        Universe universe = Universe.get();
+        if (team != null && universe != null) {
+            PlayerRef killer = universe.getPlayer(killerId);
+            if (killer != null) {
+                killer.sendMessage(SiegeMessages.pointsEarnedKill(KILL_POINTS, team.getPoints(), "an enemy"));
+            }
+        }
     }
 }
