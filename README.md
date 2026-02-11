@@ -1,6 +1,44 @@
 # Siege System Lifecycle Documentation
 
-This document outlines the features, states, and validations of the **Siege System** implemented for territories, teams, and points management. All core functionality has been implemented and verified.
+This document outlines the features, states, and validations of the **Siege System** implemented for territories, teams, and points management. The system is mostly complete and integrated with **Hytale**, with a few pending improvements (e.g., block protection for banners and proper banner blocks).
+
+---
+
+## SimpleClaims Mod Integration
+
+The **SimpleClaims** mod is used to manage **territories and player claims**, and it integrates closely with the Siege System to handle ownership, access, and dependency rules.
+
+### Key Points:
+
+- **Territory Management**
+  - Each territory in the Siege System corresponds to a **SimpleClaims claim**.
+  - Claim ownership is synced with the territory owner in the Siege System.
+  - Siege actions respect claim boundaries to prevent unauthorized interactions.
+
+- **Claims & Dependencies**
+  - Territories can have **parent and child claims** (dependencies).
+  - The system ensures that sieges cannot start on a territory if **dependent territories are restricted** or invalid.
+  - This prevents players from bypassing protection rules or breaking hierarchical dependencies.
+
+- **Access & Protection**
+  - Players not in the active siege are blocked from interacting with claimed territories.
+  - The **block break protection** ensures that banners and territory structures are protected according to claim rules, while still allowing siege interactions where permitted.
+  - Future updates include replacing placeholder blocks with proper banner blocks and enforcing **Hytale-specific block protection** for full integration.
+
+- **Integration Flow**
+  1. When a siege starts, the system verifies that the target territory is valid and all **SimpleClaims dependencies** are satisfied.
+  2. The Siege System updates claim ownership, banner status, and siege state in sync with SimpleClaims.
+  3. Points, team actions, and timer mechanics respect claim boundaries, ensuring no unauthorized interactions occur outside the active siege.
+
+---
+
+## Hytale Integration Notes
+
+- Most of the system is fully integrated with Hytale.
+- Pending improvements:
+  - Add **block break protection** to banner blocks.
+  - Replace placeholder banner blocks with proper Hytale banners.
+  - Ensure all territory effects and points are fully synchronized with Hytale mechanics.
 
 ---
 
@@ -30,64 +68,3 @@ This document outlines the features, states, and validations of the **Siege Syst
 
 > **Note:** Getting a player’s team is not needed in this system.
 
----
-
-## Points
-
-| Action | Expected Result | Status |
-|--------|----------------|--------|
-| Adding banner capture points | Increases team points | Hytale Integration |
-| Adding kill points | Increases team points | Hytale Integration |
-| Adding point to a team | Updates points correctly | ✅ Done |
-| Getting team total points | Returns correct value | ✅ Done |
-| Comparing two teams’ points | Returns correct winner | ✅ Done |
-
----
-
-## Timer & State
-
-| Action | Expected Result | Status |
-|--------|----------------|--------|
-| Starting the siege timer | Sets the start time | ✅ Done |
-| Siege reports expired | When duration exceeded | ✅ Done |
-| Siege reports not expired | Before duration | ✅ Done |
-| Setting banner active | Marks banner as active | ✅ Done |
-| Setting banner inactive | Marks banner as inactive | ✅ Done |
-| Checking banner state | Returns correct value | ✅ Done |
-
----
-
-## Outcome
-
-| Action | Expected Result | Status |
-|--------|----------------|--------|
-| Determining winner | Returns attacker team if attacker has more points | ✅ Done |
-| Determining winner | Returns defender team if defender has more points | ✅ Done |
-| Determining winner | Returns no winner on tie | ✅ Done |
-
----
-
-## Territory Effects
-
-| Action | Expected Result | Status |
-|--------|----------------|--------|
-| Setting territory owner | Updates owner correctly | ✅ Done |
-| Getting territory owner | Returns correct owner | ✅ Done |
-| Setting territory color | Updates color correctly | ✅ Done |
-| Setting territory tax rate | Updates tax rate correctly | ✅ Done |
-
----
-
-## Validation
-
-| Action | Expected Result | Status |
-|--------|----------------|--------|
-| Siege cannot start on invalid territory | Validation enforced | ✅ Done |
-| Banner cannot be placed if territory is already sieged | Validation enforced | ✅ Done |
-| Player cannot interact with siege if not in active siege | Validation enforced | ✅ Done |
-
----
-
-> **Status Legend:**  
-> ✅ Done – Fully implemented and verified  
-> ⚠️ Hytale Integration – Pending integration with Hytale-specific systems
